@@ -1,0 +1,73 @@
+\documentclass[11pt]{article}
+\usepackage{fullpage}
+\usepackage{graphicx}
+\usepackage{amsmath}
+\usepackage{wasysym}
+\newtheorem{remark}{Remark}
+\newtheorem{example}{Example}
+\newcommand{\eat}[1]{}
+\begin{document}
+
+
+
+\title{Web Information Retrieval (67782)\\ Ex1: Index Structure Analysis}
+\date{}
+
+\maketitle
+\noindent {\bf Submitted by:}
+
+
+\section{General Explanation and Diagram}
+
+{\em This section should contain the  precise details behind the index structure that you have implemented. Your discussion should be very specific and should allow the reader to precisely understand the format of your index files, stored on disk. Provide a diagram that depicts the structure of the index. }
+
+\section{Main Memory Versus Disk}
+
+{\em Put an explanation of which portions of the index are read into memory when an IndexReader object is created, and which portions will be read as needed. }
+
+\section{Theoretical Analysis of Size}
+
+{\em Theoretically analyze the expected size (in bytes) of all of your index structures. In your
+  analysis, the size of the index should be a function of the size of the
+  input.  Use the following variables to denote the various input size parameters:
+  \begin{description}
+      \item[$N$] Number of reviews
+      \item[$M$] Total number of tokens (counting duplicates as many times as they appear)
+      \item[$D$] Number of different tokens (counting duplicates once)
+      \item[$L$] Average token length (counting each token once)
+      \item[$F$] Average token frequency, i.e., number of reviews containing a token
+  \end{description}
+  You can add additional variables as needed.}
+  
+\section{Theoretical Analysis of Runtime}  
+
+{\em Using the same variables, theoretically analyze the runtime of the functions of IndexReader. Include both the runtime and a short explanation.}
+
+\begin{itemize}
+    \item \verb+IndexReader(String dir)+:
+
+    \item \verb+getProductId(int reviewId)+:
+
+	\item \verb+getReviewScore(int reviewId)+:
+
+	\item \verb+getReviewHelpfulnessNumerator(int reviewId)+:
+
+   \item \verb+getReviewHelpfulnessDenominator(int reviewId)+:
+
+    \item \verb+getReviewLength(int reviewId)+:
+
+	\item \verb+getTokenFrequency(String token)+:
+    
+    \item \verb+getTokenCollectionFrequency(String token)+:
+
+
+    \item \verb+getReviewsWithToken(String token)+:
+
+    \item \verb+getNumberOfReviews()+:
+
+    \item \verb+getTokenSizeOfReviews()+:
+
+   \item \verb+getProductReviews(String productId)+:
+\end{itemize}
+
+\end{document}
