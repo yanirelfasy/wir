@@ -66,4 +66,5 @@ public class Review {
     public TreeMap<String, Integer> getTokens(){
         return this.tokens;
     }
+    public String getProductID() {return this.productID;}
 }
