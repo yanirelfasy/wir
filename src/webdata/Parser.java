@@ -17,7 +17,7 @@ public class Parser {
     private ArrayList<Review> reviews = new ArrayList<>();
     boolean isReadingText = false;
 
-    public void parse(String inputPath, String outputPath){
+    public void parse(String inputPath){
         try(BufferedReader reader = new BufferedReader(new FileReader(new File(inputPath)))){
             String line = reader.readLine();
             Review review = new Review();
@@ -53,8 +53,6 @@ public class Parser {
             if(review.isReviewFull()){
                 reviews.add(review);
             }
-            TokensDictionary test = new TokensDictionary(reviews, outputPath);
-            System.out.println("DONE");
         }
         catch(IOException e){
             System.err.println(e.getMessage());
@@ -69,6 +67,10 @@ public class Parser {
             result = regexWorker.group(1);
         }
         return result;
+    }
+
+    public ArrayList<Review> getParsedReviews(){
+        return this.reviews;
     }
 
 
