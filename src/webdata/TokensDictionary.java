@@ -8,9 +8,25 @@ public class TokensDictionary extends Dictionary{
 
     public TokensDictionary(ArrayList<Review> parsedReviews, String outputPath){
         super();
-        this.outputPath = outputPath;
-        this.buildDictionary(this.combineTokens(parsedReviews));
+        this.outputPath = outputPath + File.separator + Consts.SUB_DIRS.tokensDictionary.name();
+        this.postinglistOutputName = Consts.FILE_NAMES.tokensPostinglist.name();
+        this.buildDictionary(this.combineTokens(parsedReviews), parsedReviews);
     }
+
+    public TokensDictionary(String outputPath){
+        super();
+        this.outputPath = outputPath + File.separator + Consts.SUB_DIRS.tokensDictionary.name();
+        this.postinglistOutputName = Consts.FILE_NAMES.tokensPostinglist.name();
+        this.freq = this.readFreqFromDisk();
+        this.valuesPtr = this.readValuesPtrFromDisk();
+        this.postingListPtr = this.readPostinglistPtrFromDisk();
+        this.dictValues = this.readConcatStringFromDisk();
+        this.prefix = this.readPrefixFromDisk();
+        this.length = this.readLengthFromDisk();
+        this.numOfValues = this.readNumOfValuesFromDisk();
+        this.numOfBlocks = (int)Math.ceil(numOfValues / (double)Consts.K);
+    }
+
 
     private TreeMap<String, TreeMap<Integer, ArrayList<Integer>>> combineTokens(ArrayList<Review> parsedReviews){
         TreeMap<String, TreeMap<Integer, ArrayList<Integer>>> allTokens = new TreeMap<>();
@@ -37,30 +53,34 @@ public class TokensDictionary extends Dictionary{
     }
 
     @Override
-    protected void buildDictionary(TreeMap<String, TreeMap<Integer, ArrayList<Integer>>> allTokens){
+    protected void buildDictionary(TreeMap<String, TreeMap<Integer, ArrayList<Integer>>> allTokens, ArrayList<Review> parsedReviews){
         this.initProps(allTokens);
         int tokenIndex = 0;
         String lastAddedToken = "";
         for(String token : allTokens.keySet()){
-            if (tokenIndex % K == 0) {
-                this.valuesPtr[(tokenIndex / K)] = this.concatString.length();
+            if (tokenIndex % Consts.K == 0) {
+                this.valuesPtr[(tokenIndex / Consts.K)] = this.dictValues.length();
                 this.prefix[tokenIndex] = 0;
-                this.concatString = this.concatString.concat(token);
+                this.dictValues = this.dictValues.concat(token);
             }
             else {
                 byte prefixLength = getCommonPrefixLength(lastAddedToken, token);
                 this.prefix[tokenIndex] = prefixLength;
-                this.concatString = this.concatString.concat(token.substring(prefixLength));
+                this.dictValues = this.dictValues.concat(token.substring(prefixLength));
             }
             ArrayList<Integer> postingListRaw = allTokens.get(token).get(allTokens.get(token).firstKey());
+            ArrayList<Integer> postingListRawWithFreq = new ArrayList<>();
+            for(int reviewIndex : postingListRaw){
+                postingListRawWithFreq.add(reviewIndex);
+                postingListRawWithFreq.add(parsedReviews.get(reviewIndex - 1).getTokens().get(token));
+            }
             this.freq[tokenIndex] = allTokens.get(token).firstKey();
             this.length[tokenIndex] = (byte)(token.length());
-            this.generatePostinglist(postingListRaw, tokenIndex, "tokenPostinglist");
+            this.generatePostinglist(postingListRawWithFreq, tokenIndex, this.postinglistOutputName);
             tokenIndex++;
             lastAddedToken = token;
         }
     }
-
 
 
 }

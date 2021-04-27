@@ -4,13 +4,15 @@ import java.util.TreeMap;
 
 public class Review {
 
+    private int reviewID;
     private String productID;
     private int helpfulnessFirst;
     private int helpfulnessSecond;
     private int score;
     private TreeMap<String, Integer> tokens;
 
-    public Review(){
+    public Review(int reviewID){
+        this.reviewID = reviewID;
         this.tokens = new TreeMap<>();
         this.helpfulnessFirst = -1;
         this.helpfulnessSecond = -1;
@@ -67,4 +69,8 @@ public class Review {
         return this.tokens;
     }
     public String getProductID() {return this.productID;}
+    public int getReviewID() {return this.reviewID;}
+    public int getHelpfulnessFirst(){ return this.helpfulnessFirst; }
+    public int getHelpfulnessSecond() {return this.helpfulnessSecond;}
+    public int getScore() {return this.score;}
 }

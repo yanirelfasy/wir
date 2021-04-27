@@ -8,8 +8,23 @@ public class ProductsDictionary extends Dictionary{
 
     public ProductsDictionary(ArrayList<Review> parsedReviews, String outputPath){
         super();
-        this.outputPath = outputPath;
-        this.buildDictionary(this.combineIDs(parsedReviews));
+        this.outputPath = outputPath + File.separator + Consts.SUB_DIRS.productsDictionary.name();;
+        this.postinglistOutputName = Consts.FILE_NAMES.productsPostinglist.name();
+        this.buildDictionary(this.combineIDs(parsedReviews), parsedReviews);
+    }
+
+    public ProductsDictionary(String outputPath){
+        super();
+        this.outputPath = outputPath + File.separator + Consts.SUB_DIRS.productsDictionary.name();;
+        this.postinglistOutputName = Consts.FILE_NAMES.productsPostinglist.name();
+        this.freq = this.readFreqFromDisk();
+        this.valuesPtr = this.readValuesPtrFromDisk();
+        this.postingListPtr = this.readPostinglistPtrFromDisk();
+        this.dictValues = this.readConcatStringFromDisk();
+        this.prefix = this.readPrefixFromDisk();
+        this.length = this.readLengthFromDisk();
+        this.numOfValues = this.readNumOfValuesFromDisk();
+        this.numOfBlocks = (int)Math.ceil(numOfValues / (double)Consts.K);
     }
 
     private TreeMap<String, TreeMap<Integer, ArrayList<Integer>>> combineIDs(ArrayList<Review> parsedReviews){
@@ -34,25 +49,25 @@ public class ProductsDictionary extends Dictionary{
     }
 
     @Override
-    protected void buildDictionary(TreeMap<String, TreeMap<Integer, ArrayList<Integer>>> allIDs){
+    protected void buildDictionary(TreeMap<String, TreeMap<Integer, ArrayList<Integer>>> allIDs, ArrayList<Review> parsedReviews){
         this.initProps(allIDs);
         int productIDIndex = 0;
         String lastAddedID = "";
         for(String productID : allIDs.keySet()){
-            if (productIDIndex % K == 0) {
-                this.valuesPtr[(productIDIndex / K)] = this.concatString.length();
+            if (productIDIndex % Consts.K == 0) {
+                this.valuesPtr[(productIDIndex / Consts.K)] = this.dictValues.length();
                 this.prefix[productIDIndex] = 0;
-                this.concatString = this.concatString.concat(productID);
+                this.dictValues = this.dictValues.concat(productID);
             }
             else {
                 byte prefixLength = getCommonPrefixLength(lastAddedID, productID);
                 this.prefix[productIDIndex] = prefixLength;
-                this.concatString = this.concatString.concat(productID.substring(prefixLength));
+                this.dictValues = this.dictValues.concat(productID.substring(prefixLength));
             }
             ArrayList<Integer> postingListRaw = allIDs.get(productID).get(allIDs.get(productID).firstKey());
             this.freq[productIDIndex] = allIDs.get(productID).firstKey();
             this.length[productIDIndex] = (byte)(productID.length());
-            this.generatePostinglist(postingListRaw, productIDIndex, "productIDsPostinglist");
+            this.generatePostinglist(postingListRaw, productIDIndex, this.postinglistOutputName);
             productIDIndex++;
             lastAddedID = productID;
         }

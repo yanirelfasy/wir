@@ -20,7 +20,7 @@ public class Parser {
     public void parse(String inputPath){
         try(BufferedReader reader = new BufferedReader(new FileReader(new File(inputPath)))){
             String line = reader.readLine();
-            Review review = new Review();
+            Review review = new Review(1);
             while(line != null){
                 String value = "";
                 // Get the product ID
@@ -29,7 +29,7 @@ public class Parser {
                         reviews.add(review);
                     }
                     this.isReadingText = false;
-                    review = new Review();
+                    review = new Review(reviews.size() + 1);
                     review.setProductID(value);
                 }
                 // Get the helpfulness
