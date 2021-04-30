@@ -41,7 +41,7 @@ public class Review {
     }
 
     public void addText(String text){
-        String [] tokens = text.replaceAll("<[^\\>]*>", "").split("[^A-Za-z0-9]");
+        String [] tokens = text.split("[^A-Za-z0-9]");
         for(String token : tokens){
             if(!token.equals("")){
                 String lowerToken = token.toLowerCase();

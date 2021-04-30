@@ -18,7 +18,7 @@ public class ProductsDictionary extends Dictionary{
         this.outputPath = outputPath + File.separator + Consts.SUB_DIRS.productsDictionary.name();;
         this.postinglistOutputName = Consts.FILE_NAMES.productsPostinglist.name();
         this.freq = this.readFreqFromDisk();
-        this.valuesPtr = this.readValuesPtrFromDisk();
+        this.valuesPtr = this.readValuesPtrFromDisk(true);
         this.postingListPtr = this.readPostinglistPtrFromDisk();
         this.dictValues = this.readConcatStringFromDisk();
         this.prefix = this.readPrefixFromDisk();
@@ -67,7 +67,7 @@ public class ProductsDictionary extends Dictionary{
             ArrayList<Integer> postingListRaw = allIDs.get(productID).get(allIDs.get(productID).firstKey());
             this.freq[productIDIndex] = allIDs.get(productID).firstKey();
             this.length[productIDIndex] = (byte)(productID.length());
-            this.generatePostinglist(postingListRaw, productIDIndex, this.postinglistOutputName);
+            this.generatePostinglist(postingListRaw, productIDIndex, this.postinglistOutputName, false);
             productIDIndex++;
             lastAddedID = productID;
         }

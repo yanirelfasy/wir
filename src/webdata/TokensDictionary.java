@@ -18,7 +18,7 @@ public class TokensDictionary extends Dictionary{
         this.outputPath = outputPath + File.separator + Consts.SUB_DIRS.tokensDictionary.name();
         this.postinglistOutputName = Consts.FILE_NAMES.tokensPostinglist.name();
         this.freq = this.readFreqFromDisk();
-        this.valuesPtr = this.readValuesPtrFromDisk();
+        this.valuesPtr = this.readValuesPtrFromDisk(true);
         this.postingListPtr = this.readPostinglistPtrFromDisk();
         this.dictValues = this.readConcatStringFromDisk();
         this.prefix = this.readPrefixFromDisk();
@@ -76,7 +76,7 @@ public class TokensDictionary extends Dictionary{
             }
             this.freq[tokenIndex] = allTokens.get(token).firstKey();
             this.length[tokenIndex] = (byte)(token.length());
-            this.generatePostinglist(postingListRawWithFreq, tokenIndex, this.postinglistOutputName);
+            this.generatePostinglist(postingListRawWithFreq, tokenIndex, this.postinglistOutputName, true);
             tokenIndex++;
             lastAddedToken = token;
         }

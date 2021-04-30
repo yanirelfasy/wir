@@ -47,8 +47,8 @@ public abstract class Dictionary implements Serializable {
         return (byte)shortestLength;
     }
 
-    protected void generatePostinglist(ArrayList<Integer> postingListRawData, int position, String postingListName){
-        ArrayList<Byte> encodedData = GroupVarint.compress(postingListRawData, true);
+    protected void generatePostinglist(ArrayList<Integer> postingListRawData, int position, String postingListName, boolean withFreq){
+        ArrayList<Byte> encodedData = GroupVarint.compress(postingListRawData, true, withFreq);
         this.postingListPtr[position] = Utils.writeToFile(encodedData, this.outputPath + File.separator + postingListName);
     }
 
@@ -116,7 +116,7 @@ public abstract class Dictionary implements Serializable {
     public int getPostinglistLength(long postinglistPointer, long nextListPointer){
         int result = 0;
         try{
-            ArrayList<Integer> allPostingData = this.getDecodedPostinglist(postinglistPointer, nextListPointer, false);
+            ArrayList<Integer> allPostingData = this.getDecodedPostinglist(postinglistPointer, nextListPointer, false, true);
             result = Utils.splitAtEven(allPostingData).size();
         }
         catch (Exception e) {
@@ -125,14 +125,14 @@ public abstract class Dictionary implements Serializable {
         return result;
     }
 
-    public ArrayList<Integer> getDecodedPostinglist(long postinglistPointer, long nextListPointer, boolean decodeGaps){
+    public ArrayList<Integer> getDecodedPostinglist(long postinglistPointer, long nextListPointer, boolean decodeGaps, boolean hasFreq){
         ArrayList<Integer> sequence = new ArrayList<>();
         try (RandomAccessFile postingList = new RandomAccessFile(this.outputPath + File.separator + this.postinglistOutputName, "rw")) {
             nextListPointer = (nextListPointer == -1) ? postingList.length(): nextListPointer;
             postingList.seek(postinglistPointer);
             byte [] allBytes = new byte[(int) (nextListPointer - postinglistPointer)];
             postingList.read(allBytes);
-            sequence = GroupVarint.decodeSequence(allBytes, decodeGaps);
+            sequence = GroupVarint.decodeSequence(allBytes, decodeGaps, hasFreq);
             return sequence;
         }
         catch (IOException e) {
@@ -147,8 +147,8 @@ public abstract class Dictionary implements Serializable {
     }
 
     public void writeDictionaryToDisk(){
-        ArrayList<Byte> encodedFreq = GroupVarint.compress(this.freq, false);
-        ArrayList<Byte> encodedValuePtr = GroupVarint.compress(this.valuesPtr, false);
+        ArrayList<Byte> encodedFreq = GroupVarint.compress(this.freq, false, false);
+        ArrayList<Byte> encodedValuePtr = GroupVarint.compress(this.valuesPtr, true, false);
         ArrayList<Byte> encodedPostinglistPtr = GroupVarint.compress(this.postingListPtr, true);
         ArrayList<Byte> encodedString = Utils.convertToBytesList(this.dictValues.getBytes());
         String writingPath = this.outputPath + File.separator;
@@ -168,7 +168,7 @@ public abstract class Dictionary implements Serializable {
         try{
             Path inputFilePath = Paths.get(path);
             byte[] resultAsBytes = Files.readAllBytes(inputFilePath);
-            ArrayList<Long> result = GroupVarint.decodeSequenceAsLong(resultAsBytes, false);
+            ArrayList<Long> result = GroupVarint.decodeSequenceAsLong(resultAsBytes, true);
             return Utils.convertToLongArray(result);
         }
         catch(Exception e){
@@ -189,11 +189,11 @@ public abstract class Dictionary implements Serializable {
     }
 
     protected int[] readFreqFromDisk(){
-        return Utils.readIntArrayFromDisk(this.outputPath + File.separator + Consts.FILE_NAMES.Freq);
+        return Utils.readIntArrayFromDisk(this.outputPath + File.separator + Consts.FILE_NAMES.Freq, false);
     }
 
-    protected int[] readValuesPtrFromDisk(){
-        return Utils.readIntArrayFromDisk(this.outputPath + File.separator + Consts.FILE_NAMES.ValuePtr);
+    protected int[] readValuesPtrFromDisk(boolean asGaps){
+        return Utils.readIntArrayFromDisk(this.outputPath + File.separator + Consts.FILE_NAMES.ValuePtr, asGaps);
     }
 
     protected long[] readPostinglistPtrFromDisk(){

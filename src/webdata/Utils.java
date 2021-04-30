@@ -77,11 +77,11 @@ public class Utils {
         return result;
     }
 
-    public static int[] readIntArrayFromDisk(String path){
+    public static int[] readIntArrayFromDisk(String path, boolean asGaps){
         try{
             Path inputFilePath = Paths.get(path);
             byte[] resultAsBytes = Files.readAllBytes(inputFilePath);
-            ArrayList<Integer> result = GroupVarint.decodeSequence(resultAsBytes, false);
+            ArrayList<Integer> result = GroupVarint.decodeSequence(resultAsBytes, asGaps, false);
             return Utils.convertToIntArray(result);
         }
         catch(Exception e){

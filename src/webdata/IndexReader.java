@@ -113,23 +113,23 @@ public class IndexReader {
 	* */
 	public Enumeration<Integer> getReviewsWithToken(String token) {
 		ArrayList<Integer> result = new ArrayList<>();
-		ArrayList<Integer> postingList;
+		ArrayList<Integer> postingList = new ArrayList<>();
 		ArrayList<Integer> freqList;
 		int index = 0;
 		int tokenIndex = this.tokensDictionary.search(token);
 		if(tokenIndex >= 0){
 			long postinglistPtr = this.tokensDictionary.getPostingListPointer(tokenIndex);
 			long nextPostinglistPtr = this.tokensDictionary.getPostingListPointer(tokenIndex + 1);
-			postingList = this.tokensDictionary.getDecodedPostinglist(postinglistPtr, nextPostinglistPtr, true);
-			freqList = Utils.splitAtOdd(postingList);
-			postingList = Utils.splitAtEven(postingList);
-			for (int reviewID : postingList){
-				result.add(reviewID);
-				result.add(freqList.get(index));
-				index++;
-			}
+			postingList = this.tokensDictionary.getDecodedPostinglist(postinglistPtr, nextPostinglistPtr, true, true);
+//			freqList = Utils.splitAtOdd(postingList);
+//			postingList = Utils.splitAtEven(postingList);
+//			for (int reviewID : postingList){
+//				result.add(reviewID);
+//				result.add(freqList.get(index));
+//				index++;
+//			}
 		}
-		return Collections.enumeration(result);
+		return Collections.enumeration(postingList);
 	}
 
 	/**
@@ -159,8 +159,7 @@ public class IndexReader {
 		if(productIDIndex >= 0){
 			long postinglistPtr = this.productsDictionary.getPostingListPointer(productIDIndex);
 			long nextPostinglistPtr = this.productsDictionary.getPostingListPointer(productIDIndex + 1);
-			result = this.productsDictionary.getDecodedPostinglist(postinglistPtr, nextPostinglistPtr, true);
-			result = Utils.splitAtEven(result);
+			result = this.productsDictionary.getDecodedPostinglist(postinglistPtr, nextPostinglistPtr, true, false);
 		}
 		return Collections.enumeration(result);
 	}

@@ -7,16 +7,21 @@ import java.util.Arrays;
 
 public class GroupVarint {
 
-    public static ArrayList<Byte> compress(ArrayList<Integer> values, boolean encodeAsGaps){
+    public static ArrayList<Byte> compress(ArrayList<Integer> values, boolean encodeAsGaps, boolean withFreq){
         byte sizesByte = 0;
         ArrayList<Byte> compressed = new ArrayList<>();
         ArrayList<Byte> container = new ArrayList<>();
         int prevValue = 0;
-        int prevFreq = 0;
         int index = 0;
         int groupsCounter = 1;
         for(int value : values){
-            ArrayList<Byte> gap = convertIntToBytes(index % 2 == 0 ? value - prevValue : value - prevFreq);
+            ArrayList<Byte> gap;
+            if(withFreq){
+                gap = convertIntToBytes(index % 2 == 0 ? value - prevValue : value);
+            }
+            else{
+                gap = convertIntToBytes(value - prevValue);
+            }
             int gapSize = gap.size();
             sizesByte = (byte)((sizesByte << 2) + (gapSize - 1));
             container.addAll(gap);
@@ -24,34 +29,45 @@ public class GroupVarint {
                 compressed.add(sizesByte);
                 compressed.addAll(container);
                 sizesByte = 0;
+                groupsCounter = 0;
                 container.clear();
             }
-            if(index % 2 == 0){
-                prevValue = encodeAsGaps ? value : 0;
+            if(withFreq){
+                if(index % 2 == 0){
+                    prevValue = encodeAsGaps ? value : 0;
+                }
             }
             else{
-                prevFreq = encodeAsGaps ? value : 0;
+                prevValue = encodeAsGaps ? value : 0;
             }
             groupsCounter++;
             index++;
         }
         if(!container.isEmpty()){
+            for(int i = 0; i < 4 - (groupsCounter - 1); i++){
+                sizesByte = (byte)(sizesByte << 2);
+            }
             compressed.add(sizesByte);
             compressed.addAll(container);
         }
         return compressed;
     }
 
-    public static ArrayList<Byte> compress(int[] values, boolean encodeAsGaps) {
+    public static ArrayList<Byte> compress(int[] values, boolean encodeAsGaps, boolean withFreq) {
         byte sizesByte = 0;
         ArrayList<Byte> compressed = new ArrayList<>();
         ArrayList<Byte> container = new ArrayList<>();
         int prevValue = 0;
-        int prevFreq = 0;
         int index = 0;
         int groupsCounter = 1;
         for(int value : values){
-            ArrayList<Byte> gap = convertIntToBytes(index % 2 == 0 ? value - prevValue : value - prevFreq);
+            ArrayList<Byte> gap;
+            if(withFreq){
+                gap = convertIntToBytes(index % 2 == 0 ? value - prevValue : value);
+            }
+            else{
+                gap = convertIntToBytes(value - prevValue);
+            }
             int gapSize = gap.size();
             sizesByte = (byte)((sizesByte << 2) + (gapSize - 1));
             container.addAll(gap);
@@ -59,18 +75,24 @@ public class GroupVarint {
                 compressed.add(sizesByte);
                 compressed.addAll(container);
                 sizesByte = 0;
+                groupsCounter = 0;
                 container.clear();
             }
-            if(index % 2 == 0){
-                prevValue = encodeAsGaps ? value : 0;
+            if(withFreq){
+                if(index % 2 == 0){
+                    prevValue = encodeAsGaps ? value : 0;
+                }
             }
             else{
-                prevFreq = encodeAsGaps ? value : 0;
+                prevValue = encodeAsGaps ? value : 0;
             }
             groupsCounter++;
             index++;
         }
         if(!container.isEmpty()){
+            for(int i = 0; i < 4 - (groupsCounter - 1); i++){
+                sizesByte = (byte)(sizesByte << 2);
+            }
             compressed.add(sizesByte);
             compressed.addAll(container);
         }
@@ -98,6 +120,9 @@ public class GroupVarint {
             groupsCounter++;
         }
         if(!container.isEmpty()){
+            for(int i = 0; i < groupsCounter - 1; i++){
+                sizesByte = (byte)(sizesByte << 2);
+            }
             compressed.add(sizesByte);
             compressed.addAll(container);
         }
@@ -142,7 +167,7 @@ public class GroupVarint {
         return decoded;
     }
 
-    public static ArrayList<Integer> decodeSequence(byte[] sequence, boolean decodeGaps){
+    public static ArrayList<Integer> decodeSequence(byte[] sequence, boolean decodeGaps, boolean hasFreq){
         int bytesRead = 0;
         int [] sizes;
         int prevValue = 0;
@@ -157,12 +182,15 @@ public class GroupVarint {
                     byte [] subSequence = Arrays.copyOfRange(sequence, bytesRead, bytesRead + size);
                     subSequence = GroupVarint.makeFourByteArray(subSequence);
                     int converted = Utils.convertBytesToInt(subSequence);
-                    result.add(index % 2 == 0 ? converted + prevValue : converted + prevFreq);
-                    if(index % 2 == 0){
-                        prevValue = decodeGaps ? converted + prevValue : 0;
+                    if(hasFreq){
+                        result.add(index % 2 == 0 ? converted + prevValue : converted + prevFreq);
+                        if(index % 2 == 0){
+                            prevValue = decodeGaps ? converted + prevValue : 0;
+                        }
                     }
                     else{
-                        prevFreq = decodeGaps ? converted + prevFreq : 0;
+                        result.add(converted + prevValue);
+                        prevValue = decodeGaps ? converted + prevValue : 0;
                     }
                     bytesRead += size;
                 }
@@ -202,10 +230,12 @@ public class GroupVarint {
 
     public static byte[] makeFourByteArray(byte[] arr){
         byte[] result = {0, 0, 0, 0};
+        int addedIndex = 0;
         if(arr.length < 4){
             for(int i = 0; i < 4; i++){
                 if(i > 4 - arr.length - 1){
-                    result[i] = arr[4 - i - 1];
+                    result[i] = arr[addedIndex];
+                    addedIndex++;
                 }
             }
         }
@@ -215,10 +245,12 @@ public class GroupVarint {
 
     public static byte[] makeEightByteArray(byte[] arr){
         byte[] result = {0, 0, 0, 0, 0, 0, 0, 0};
+        int addedIndex = 0;
         if(arr.length < 8){
             for(int i = 0; i < 8; i++){
                 if(i > 8 - arr.length - 1){
-                    result[i] = arr[8 - i - 1];
+                    result[i] = arr[addedIndex];
+                    addedIndex++;
                 }
             }
         }

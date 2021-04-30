@@ -58,13 +58,11 @@ public class SlowIndexWriter {
 		if(outputDir.exists()){
 			this.removeIndex(dir);
 		}
-		else{
+		outputDir.mkdir();
+		String[] subDirs = {Consts.SUB_DIRS.tokensDictionary.name(), Consts.SUB_DIRS.productsDictionary.name(), Consts.SUB_DIRS.metaData.name()};
+		for (String subDir : subDirs){
+			outputDir = new File(dir + File.separator + subDir);
 			outputDir.mkdir();
-			String[] subDirs = {Consts.SUB_DIRS.tokensDictionary.name(), Consts.SUB_DIRS.productsDictionary.name(), Consts.SUB_DIRS.metaData.name()};
-			for (String subDir : subDirs){
-				outputDir = new File(dir + File.separator + subDir);
-				outputDir.mkdir();
-			}
 		}
 	}
 }

@@ -3,6 +3,7 @@ package webdata;
 import java.io.File;
 import java.io.Serializable;
 import java.util.ArrayList;
+import java.util.TreeMap;
 
 public class ReviewsMetaData implements Serializable {
     private int [] score;
@@ -19,10 +20,10 @@ public class ReviewsMetaData implements Serializable {
 
     public ReviewsMetaData(String dir){
         String metaDir = dir + File.separator + "metaData" + File.separator;
-        this.score = Utils.readIntArrayFromDisk(metaDir + "Score");
-        this.firstHelpfulness = Utils.readIntArrayFromDisk(metaDir + "HelpFirst");
-        this.secondHelpfulness = Utils.readIntArrayFromDisk(metaDir + "HelpSecond");
-        this.numOfTokens = Utils.readIntArrayFromDisk(metaDir + "NumOfTokens");
+        this.score = Utils.readIntArrayFromDisk(metaDir + "Score", false);
+        this.firstHelpfulness = Utils.readIntArrayFromDisk(metaDir + "HelpFirst", false);
+        this.secondHelpfulness = Utils.readIntArrayFromDisk(metaDir + "HelpSecond", false);
+        this.numOfTokens = Utils.readIntArrayFromDisk(metaDir + "NumOfTokens", false);
         this.productIDs = Utils.readStringFromDisk(metaDir + "ProductIDs");
         this.numOfReviews = Utils.readIntFromDisk(metaDir + "NumOfReviews");
     }
@@ -33,9 +34,17 @@ public class ReviewsMetaData implements Serializable {
             this.score[reviewIndex] = review.getScore();
             this.firstHelpfulness[reviewIndex] = review.getHelpfulnessFirst();
             this.secondHelpfulness[reviewIndex] = review.getHelpfulnessSecond();
-            this.numOfTokens[reviewIndex] = review.getTokens().size();
+            this.numOfTokens[reviewIndex] = this.getTotalNumOfTokens(review.getTokens());
             this.productIDs = this.productIDs.concat(review.getProductID());
         }
+    }
+
+    private int getTotalNumOfTokens(TreeMap<String, Integer> tokens){
+        int sum = 0;
+        for(int num : tokens.values()){
+            sum = sum + num;
+        }
+        return sum;
     }
 
     private void initProps(int numOfReviews){
@@ -80,10 +89,10 @@ public class ReviewsMetaData implements Serializable {
     }
 
     public void writeDataToDisk(String output){
-        ArrayList<Byte> encodedScore = GroupVarint.compress(this.score, false);
-        ArrayList<Byte> encodedHelpfulnessFirst = GroupVarint.compress(this.firstHelpfulness, false);
-        ArrayList<Byte> encodedHelpfulnessSecond = GroupVarint.compress(this.secondHelpfulness, false);
-        ArrayList<Byte> encodedNumOfTokens = GroupVarint.compress(this.numOfTokens, false);
+        ArrayList<Byte> encodedScore = GroupVarint.compress(this.score, false, false);
+        ArrayList<Byte> encodedHelpfulnessFirst = GroupVarint.compress(this.firstHelpfulness, false, false);
+        ArrayList<Byte> encodedHelpfulnessSecond = GroupVarint.compress(this.secondHelpfulness, false, false);
+        ArrayList<Byte> encodedNumOfTokens = GroupVarint.compress(this.numOfTokens, false, false);
         ArrayList<Byte> encodedNumOfReviews = GroupVarint.convertIntToBytes(this.numOfReviews);
         ArrayList<Byte> encodedString = Utils.convertToBytesList(this.productIDs.getBytes());
         String writingPath = output + File.separator;
