@@ -13,6 +13,15 @@ public class ReviewsMetaData implements Serializable {
     private int numOfReviews;
     private String productIDs;
 
+    public ReviewsMetaData(Parser parser){
+        this.score = Utils.convertToIntArray(parser.getScore());
+        this.firstHelpfulness = Utils.convertToIntArray(parser.getFirstHelpfulness());
+        this.secondHelpfulness = Utils.convertToIntArray(parser.getSecondHelpfulness());
+        this.numOfTokens = Utils.convertToIntArray(parser.getNumOfTokens());
+        this.numOfReviews = parser.getNumOfReviews();
+        this.productIDs = parser.getProductIds();
+    }
+
     public ReviewsMetaData(ArrayList<Review> parsedReviews){
         this.initProps(parsedReviews.size());
         this.fillMetadata(parsedReviews);
@@ -28,6 +37,14 @@ public class ReviewsMetaData implements Serializable {
         this.numOfReviews = Utils.readIntFromDisk(metaDir + "NumOfReviews");
     }
 
+    public void clearData(){
+        this.productIDs = null;
+        this.numOfReviews = 0;
+        this.numOfTokens = null;
+        this.score = null;
+        this.secondHelpfulness = null;
+        this.firstHelpfulness = null;
+    }
     private void fillMetadata(ArrayList<Review> parsedReviews){
         for(Review review : parsedReviews){
             int reviewIndex = review.getReviewID() - 1;
@@ -89,20 +106,31 @@ public class ReviewsMetaData implements Serializable {
     }
 
     public void writeDataToDisk(String output){
-        ArrayList<Byte> encodedScore = GroupVarint.compress(this.score, false, false);
-        ArrayList<Byte> encodedHelpfulnessFirst = GroupVarint.compress(this.firstHelpfulness, false, false);
-        ArrayList<Byte> encodedHelpfulnessSecond = GroupVarint.compress(this.secondHelpfulness, false, false);
-        ArrayList<Byte> encodedNumOfTokens = GroupVarint.compress(this.numOfTokens, false, false);
-        ArrayList<Byte> encodedNumOfReviews = GroupVarint.convertIntToBytes(this.numOfReviews);
-        ArrayList<Byte> encodedString = Utils.convertToBytesList(this.productIDs.getBytes());
         String writingPath = output + File.separator;
-
-        Utils.writeToFile(encodedScore, writingPath + "Score");
-        Utils.writeToFile(encodedHelpfulnessFirst, writingPath + "HelpFirst");
-        Utils.writeToFile(encodedHelpfulnessSecond, writingPath + "HelpSecond");
-        Utils.writeToFile(encodedNumOfTokens, writingPath + "NumOfTokens");
-        Utils.writeToFile(encodedNumOfReviews, writingPath + "NumOfReviews");
-        Utils.writeToFile(encodedString, writingPath + "ProductIDs");
+        Utils.printProgress(0, 11, "Write Meta Data - Encoding Score");
+        ArrayList<Byte> encodedData = GroupVarint.compress(this.score, false, false);
+        Utils.printProgress(1, 11, "Write Meta Data - Writing Score");
+        Utils.writeToFile(encodedData, writingPath + "Score");
+        Utils.printProgress(2, 11, "Write Meta Data - Encoding FirstHelp");
+        encodedData = GroupVarint.compress(this.firstHelpfulness, false, false);
+        Utils.printProgress(3, 11, "Write Meta Data - Writing FirstHelp");
+        Utils.writeToFile(encodedData, writingPath + "HelpFirst");
+        Utils.printProgress(4, 11, "Write Meta Data - Encoding SecondHelp");
+        encodedData= GroupVarint.compress(this.secondHelpfulness, false, false);
+        Utils.printProgress(5, 11, "Write Meta Data - Writing SecondHelp");
+        Utils.writeToFile(encodedData, writingPath + "HelpSecond");
+        Utils.printProgress(6, 11, "Write Meta Data - Encoding numOfTokens");
+        encodedData = GroupVarint.compress(this.numOfTokens, false, false);
+        Utils.printProgress(7, 11, "Write Meta Data - Writing numOfTokens");
+        Utils.writeToFile(encodedData, writingPath + "NumOfTokens");
+        Utils.printProgress(8, 11, "Write Meta Data - Encoding numOfReviews");
+        encodedData = GroupVarint.convertIntToBytes(this.numOfReviews);
+        Utils.printProgress(9, 11, "Write Meta Data - Writing numOfReviews");
+        Utils.writeToFile(encodedData, writingPath + "NumOfReviews");
+        Utils.printProgress(10, 11, "Write Meta Data - Writing ProductIDs");
+        encodedData = null;
+        Utils.writeToFile(this.productIDs.getBytes(), writingPath + "ProductIDs");
+        Utils.printProgress(11, 11, "Write Meta Data");
     }
 
 }

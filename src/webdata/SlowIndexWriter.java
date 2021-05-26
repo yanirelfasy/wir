@@ -12,11 +12,11 @@ public class SlowIndexWriter {
 	*/
 	public void slowWrite(String inputFile, String dir){
 		this.makeOutputDir(dir);
-		Parser reviewsParser = new Parser();
-		reviewsParser.parse(inputFile);
-		TokensDictionary tokensDictionary = new TokensDictionary(reviewsParser.getParsedReviews(), dir);
-		ProductsDictionary productsDictionary = new ProductsDictionary(reviewsParser.getParsedReviews(), dir);
-		ReviewsMetaData reviewsMetaData = new ReviewsMetaData(reviewsParser.getParsedReviews());
+		OldParser reviewsOldParser = new OldParser();
+		reviewsOldParser.parse(inputFile);
+		TokensDictionary tokensDictionary = new TokensDictionary(reviewsOldParser.getParsedReviews(), dir);
+		ProductsDictionary productsDictionary = new ProductsDictionary(reviewsOldParser.getParsedReviews(), dir);
+		ReviewsMetaData reviewsMetaData = new ReviewsMetaData(reviewsOldParser.getParsedReviews());
 
 		try{
 			tokensDictionary.writeDictionaryToDisk();

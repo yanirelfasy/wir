@@ -30,25 +30,25 @@ public class TokensDictionary extends Dictionary{
 
     private TreeMap<String, TreeMap<Integer, ArrayList<Integer>>> combineTokens(ArrayList<Review> parsedReviews){
         TreeMap<String, TreeMap<Integer, ArrayList<Integer>>> allTokens = new TreeMap<>();
-        for(int i = 0; i < parsedReviews.size(); i++){
-            TreeMap<String, Integer> tokens = parsedReviews.get(i).getTokens();
-            String [] sortedTokens = tokens.keySet().toArray(new String[0]);
-            for(String token : sortedTokens){
-                TreeMap<Integer, ArrayList<Integer>> newData = new TreeMap<>();
-                if(allTokens.containsKey(token)){
-                    int oldFreq = allTokens.get(token).firstKey();
-                    int newFeq = tokens.get(token) + oldFreq;
-                    allTokens.get(token).get(oldFreq).add(i + 1);
-                    newData.put(newFeq, allTokens.get(token).get(oldFreq));
-                }
-                else{
-                    ArrayList<Integer> reviews = new ArrayList<>();
-                    reviews.add(i + 1);
-                    newData.put(tokens.get(token), reviews);
-                }
-                allTokens.put(token, newData);
-            }
-        }
+//        for(int i = 0; i < parsedReviews.size(); i++){
+//            TreeMap<String, Integer> tokens = parsedReviews.get(i).getTokens();
+//            String [] sortedTokens = tokens.keySet().toArray(new String[0]);
+//            for(String token : sortedTokens){
+//                TreeMap<Integer, ArrayList<Integer>> newData = new TreeMap<>();
+//                if(allTokens.containsKey(token)){
+//                    int oldFreq = allTokens.get(token).firstKey();
+//                    int newFeq = tokens.get(token) + oldFreq;
+//                    allTokens.get(token).get(oldFreq).add(i + 1);
+//                    newData.put(newFeq, allTokens.get(token).get(oldFreq));
+//                }
+//                else{
+//                    ArrayList<Integer> reviews = new ArrayList<>();
+//                    reviews.add(i + 1);
+//                    newData.put(tokens.get(token), reviews);
+//                }
+//                allTokens.put(token, newData);
+//            }
+//        }
         return allTokens;
     }
 
@@ -72,7 +72,7 @@ public class TokensDictionary extends Dictionary{
             ArrayList<Integer> postingListRawWithFreq = new ArrayList<>();
             for(int reviewIndex : postingListRaw){
                 postingListRawWithFreq.add(reviewIndex);
-                postingListRawWithFreq.add(parsedReviews.get(reviewIndex - 1).getTokens().get(token));
+//                postingListRawWithFreq.add(parsedReviews.get(reviewIndex - 1).getTokens().get(token));
             }
             this.freq[tokenIndex] = allTokens.get(token).firstKey();
             this.length[tokenIndex] = (byte)(token.length());

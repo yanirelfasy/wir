@@ -7,10 +7,27 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.ArrayList;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 public class Utils {
 
     public static long writeToFile(ArrayList<Byte> encodedData, String output){
+        long positionInFile = -1;
+        try (RandomAccessFile resultFile = new RandomAccessFile(output, "rw")){
+            resultFile.seek(resultFile.length());
+            positionInFile = resultFile.getFilePointer();
+            for (byte encodedByte : encodedData) {
+                resultFile.writeByte(encodedByte);
+            }
+            return positionInFile;
+        } catch (IOException e) {
+            System.err.println(e.getMessage());
+            return positionInFile;
+        }
+    }
+
+    public static long writeToFile(byte[] encodedData, String output){
         long positionInFile = -1;
         try (RandomAccessFile resultFile = new RandomAccessFile(output, "rw")){
             resultFile.seek(resultFile.length());
@@ -117,5 +134,31 @@ public class Utils {
     public static int convertBytesToInt(byte[] value){
         ByteBuffer buffer = ByteBuffer.wrap(value);
         return buffer.getInt();
+    }
+
+    public static String getFieldContent(String line, String fieldTitle){
+        String regexCommand = String.format("^%s: (.*)", fieldTitle);
+        Matcher regexWorker = Pattern.compile(regexCommand).matcher(line);
+        String result = "-1";
+        if(regexWorker.find()){
+            result = regexWorker.group(1);
+        }
+        return result;
+    }
+
+    public static void printProgress(int current, int total, String stepName){
+        int percent = (current * 100) / total;
+        int progressBars = (50 * percent) / 100;
+        String progress = "|                                                  |";
+        if(percent < 100){
+            for(int i = 0; i < progressBars; i++){
+                progress = progress.replaceFirst(" ", "=");
+            }
+            progress = stepName + " " + progress + " " + percent + "%\r";
+        }
+        else{
+            progress = stepName + " -ed ' DONE\n";
+        }
+        System.out.print(progress);
     }
 }
