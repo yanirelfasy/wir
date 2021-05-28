@@ -1,11 +1,10 @@
 package webdata;
 
 import java.io.*;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.nio.file.Paths;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collections;
-import java.util.HashMap;
+import java.util.*;
 
 import static webdata.Consts.DATA_SEPARATOR;
 
@@ -97,12 +96,13 @@ public class SortManager {
         return value + DATA_SEPARATOR +reviewID + DATA_SEPARATOR + frequency;
     }
 
-    private void firstStep(String inputFile){
+    private void firstStep(String inputFile, int datasetSize){
         try (BufferedReader reader = new BufferedReader(new FileReader(new File(inputFile)), (int)Math.pow(2, 20))){
             String line = reader.readLine();
             String textBuffer = "";
             boolean isReadingText = false;
             String value = "";
+            long startTime = System.nanoTime();
             while (line != null){
 
                 if (isReadingText && (value = Utils.getFieldContent(line, "product/productId")).equals("-1")) {
@@ -116,7 +116,7 @@ public class SortManager {
                     if (!textBuffer.isEmpty()) {
                         extractTokens(textBuffer.toLowerCase());
                     }
-                    Utils.printProgress(numOfReviews, 7850071, "Sort - First Step");
+                    Utils.printProgress(numOfReviews, datasetSize, "Sort - First Step", startTime);
                     numOfReviews++;
                     if (numOfReviews % (Consts.REVIEWS_PER_FILE + 1)  == 0) {
                         writeTmpFile();
@@ -146,9 +146,117 @@ public class SortManager {
         }
     }
 
-    public void sort(String input){
-        firstStep(input);
+    private void secondStep(String resultPath, String tmpPath, String tmpFileTemplate){
+        double numOfMerges = Math.ceil(Math.log(this.numOfTempFiles) / Math.log(Consts.M));
+        long startTime = System.nanoTime();
+        if(numOfMerges == 0){
+            File input = Paths.get(tmpPath, String.format(tmpFileTemplate, 0, 0)).toFile();
+            copyFileContent(input, resultPath);
+            try{
+                Files.deleteIfExists(input.toPath());
+            }
+            catch(IOException e){
+                System.err.println(e.getMessage());
+            }
+        }
+        else{
+            double numOfFiles = this.numOfTempFiles;
+            String fileToInspect = resultPath;
+            for (int step = 1; step <= numOfMerges; step++){
+                numOfFiles = Math.ceil(numOfFiles / Consts.M);
+                int start = 0;
+                int end = start + Consts.M;
+                for (int outputFileIndex = 0; outputFileIndex < numOfFiles; outputFileIndex++){
+                    Utils.printProgress(outputFileIndex, this.numOfTempFiles, "Sort Second Step:", startTime);
+                    if ((step == numOfMerges) && (outputFileIndex == (numOfFiles - 1))) {
+                        fileToInspect = resultPath;
+                    } else {
+                        fileToInspect = Paths.get(this.tmpPath, String.format(tmpFileTemplate, step, outputFileIndex)).toString();
+                    }
+                    mergeStep(fileToInspect, tmpPath, start, end , tmpFileTemplate, step - 1, startTime);
+                    start = end;
+                    end += Consts.M;
+                }
+            }
+        }
     }
 
+    private void mergeStep(String out, String tmpPath, int start, int end, String fileName, int prevStep, long startTime) {
+        PriorityQueue<ReaderClass> readers = new PriorityQueue<>();
+        try (BufferedWriter writer = new BufferedWriter(new FileWriter(new File(out)))) {
+            this.fillWithReaders(readers, tmpPath, start, end, fileName, prevStep);
+            final int readersLength = readers.size();
+            while (!readers.isEmpty()) {
+                ReaderClass minReader = readers.poll();
+                writer.write(minReader.getLineRead().toString());
+                writer.newLine();
+                if (minReader.forward()){
+                    readers.add(minReader);
+                }
+            }
+            writer.flush();
+            deleteTempFiles(start, end, fileName, prevStep);
+        } catch (IOException e) {
+            System.err.println(e.getMessage());
+        }
+    }
 
+    private void deleteTempFiles(int start, int end, String fileName, int prevStep) {
+        try {
+            for (;start < end; ++start) {
+                Files.deleteIfExists(Paths.get(this.tmpPath, String.format(fileName, prevStep, start)));
+            }
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+    }
+
+    private void fillWithReaders(PriorityQueue<ReaderClass> dest, String tmpPath, int startingFileIndex, int endingFileIndex, String fileName, int prevStep) throws IOException {
+        for (int i = startingFileIndex; i < endingFileIndex; i++) {
+            Path filePath = Paths.get(tmpPath, String.format(fileName, prevStep, i));
+            if (Files.exists(filePath)){
+                BufferedReader br = new BufferedReader(new FileReader(filePath.toFile()));
+                String line = br.readLine();
+                if (line != null){
+                    dest.add(new ReaderClass(br, new SortDataEntry(line)));
+                }
+            }else{
+                break;
+            }
+        }
+    }
+
+    private void copyFileContent(File source, String dest) {
+        try (BufferedReader reader = new BufferedReader(new FileReader(source))) {
+            try (BufferedWriter writer = new BufferedWriter(new FileWriter(new File(dest)))) {
+                String line = reader.readLine();
+                while (line != null) {
+                    writer.write(line);
+                    writer.newLine();
+                    line = reader.readLine();
+                }
+            }
+        } catch (IOException e) {
+            System.err.println(e.getMessage());
+        }
+    }
+
+    void clear() {
+        this.tokenPairs = new HashMap<>();
+        this.productIDPairs = new HashMap<>();
+    }
+
+    public void sort(String input, String tokensOutput, String productsOutput, int datasetSize){
+        firstStep(input, datasetSize);
+        this.clear();
+        this.secondStep(tokensOutput, this.tmpPath, Consts.TEMP_TOKEN_PAIRS);
+        this.secondStep(productsOutput, this.tmpPath, Consts.TEMP_PRODUCT_IDS_PAIRS);
+    }
+
+    public ArrayList<String> getRawTokens(){
+        return this.rawTokens;
+    }
+    public ArrayList<String> getRawProductIDs(){
+        return this.rawProductIDs;
+    }
 }

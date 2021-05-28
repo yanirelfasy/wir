@@ -1,5 +1,6 @@
 package webdata;
 
+import java.io.BufferedOutputStream;
 import java.io.IOException;
 import java.io.RandomAccessFile;
 import java.nio.ByteBuffer;
@@ -7,6 +8,8 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.ArrayList;
+import java.util.Date;
+import java.util.concurrent.TimeUnit;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -146,19 +149,47 @@ public class Utils {
         return result;
     }
 
-    public static void printProgress(int current, int total, String stepName){
+    private static String getTimeString(long timeInSeconds){
+        long seconds = timeInSeconds % 60;
+        long hours = timeInSeconds / 60;
+        long minutes = hours % 60;
+        hours = hours / 60;
+        String hoursString = String.valueOf(hours);
+        String minutesString = String.valueOf(minutes);
+        String secondsString = String.valueOf(seconds);
+        if(seconds < 10){
+            secondsString = "0" + secondsString;
+        }
+        if(minutes < 10){
+            minutesString = "0" + minutesString;
+        }
+        if(hours < 10){
+            hoursString = "0" + hoursString;
+        }
+        return hoursString + ":" + minutesString + ":" + secondsString;
+    }
+
+    public static void printProgress(int current, int total, String stepName, long startTime){
         int percent = (current * 100) / total;
         int progressBars = (50 * percent) / 100;
         String progress = "|                                                  |";
+        long elapsedTime = System.nanoTime() - startTime;
+        long seconds = TimeUnit.SECONDS.convert(elapsedTime, TimeUnit.NANOSECONDS);
         if(percent < 100){
             for(int i = 0; i < progressBars; i++){
                 progress = progress.replaceFirst(" ", "=");
             }
-            progress = stepName + " " + progress + " " + percent + "%\r";
+            progress = stepName + " " + progress + " " + percent + "%   Duration: " + getTimeString(seconds) + "\r";
         }
         else{
-            progress = stepName + " -ed ' DONE\n";
+            progress = stepName + " DONE - Duration: " + getTimeString(seconds) + "\n";
         }
         System.out.print(progress);
+    }
+
+    public static String timeBetweenString(long startTime, long endTime){
+        long elapsedTime = endTime - startTime;
+        long seconds = TimeUnit.SECONDS.convert(elapsedTime, TimeUnit.NANOSECONDS);
+        return getTimeString(seconds);
     }
 }

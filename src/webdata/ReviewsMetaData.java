@@ -107,30 +107,31 @@ public class ReviewsMetaData implements Serializable {
 
     public void writeDataToDisk(String output){
         String writingPath = output + File.separator;
-        Utils.printProgress(0, 11, "Write Meta Data - Encoding Score");
-        ArrayList<Byte> encodedData = GroupVarint.compress(this.score, false, false);
-        Utils.printProgress(1, 11, "Write Meta Data - Writing Score");
+        long startTime = System.nanoTime();
+        Utils.printProgress(0, 11, "Write Meta Data - Encoding Score", startTime);
+        ArrayList<Byte> encodedData = GroupVarint.compress(this.score, false);
+        Utils.printProgress(1, 11, "Write Meta Data - Writing Score", startTime);
         Utils.writeToFile(encodedData, writingPath + "Score");
-        Utils.printProgress(2, 11, "Write Meta Data - Encoding FirstHelp");
-        encodedData = GroupVarint.compress(this.firstHelpfulness, false, false);
-        Utils.printProgress(3, 11, "Write Meta Data - Writing FirstHelp");
+        Utils.printProgress(2, 11, "Write Meta Data - Encoding FirstHelp", startTime);
+        encodedData = GroupVarint.compress(this.firstHelpfulness, false);
+        Utils.printProgress(3, 11, "Write Meta Data - Writing FirstHelp", startTime);
         Utils.writeToFile(encodedData, writingPath + "HelpFirst");
-        Utils.printProgress(4, 11, "Write Meta Data - Encoding SecondHelp");
-        encodedData= GroupVarint.compress(this.secondHelpfulness, false, false);
-        Utils.printProgress(5, 11, "Write Meta Data - Writing SecondHelp");
+        Utils.printProgress(4, 11, "Write Meta Data - Encoding SecondHelp", startTime);
+        encodedData= GroupVarint.compress(this.secondHelpfulness, false);
+        Utils.printProgress(5, 11, "Write Meta Data - Writing SecondHelp", startTime);
         Utils.writeToFile(encodedData, writingPath + "HelpSecond");
-        Utils.printProgress(6, 11, "Write Meta Data - Encoding numOfTokens");
-        encodedData = GroupVarint.compress(this.numOfTokens, false, false);
-        Utils.printProgress(7, 11, "Write Meta Data - Writing numOfTokens");
+        Utils.printProgress(6, 11, "Write Meta Data - Encoding numOfTokens", startTime);
+        encodedData = GroupVarint.compress(this.numOfTokens, false);
+        Utils.printProgress(7, 11, "Write Meta Data - Writing numOfTokens", startTime);
         Utils.writeToFile(encodedData, writingPath + "NumOfTokens");
-        Utils.printProgress(8, 11, "Write Meta Data - Encoding numOfReviews");
+        Utils.printProgress(8, 11, "Write Meta Data - Encoding numOfReviews", startTime);
         encodedData = GroupVarint.convertIntToBytes(this.numOfReviews);
-        Utils.printProgress(9, 11, "Write Meta Data - Writing numOfReviews");
+        Utils.printProgress(9, 11, "Write Meta Data - Writing numOfReviews", startTime);
         Utils.writeToFile(encodedData, writingPath + "NumOfReviews");
-        Utils.printProgress(10, 11, "Write Meta Data - Writing ProductIDs");
+        Utils.printProgress(10, 11, "Write Meta Data - Writing ProductIDs", startTime);
         encodedData = null;
         Utils.writeToFile(this.productIDs.getBytes(), writingPath + "ProductIDs");
-        Utils.printProgress(11, 11, "Write Meta Data");
+        Utils.printProgress(11, 11, "Write Meta Data", startTime);
     }
 
 }

@@ -1,10 +1,21 @@
 package webdata;
 
+import java.io.BufferedReader;
 import java.io.File;
+import java.io.FileReader;
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.TreeMap;
 
 public class ProductsDictionary extends Dictionary{
+
+    public ProductsDictionary(int totalNumOfProducts, String sortedProductsFilePath, String outputPath, ArrayList<String> mapping){
+        super();
+        this.outputPath = outputPath + File.separator + Consts.SUB_DIRS.productsDictionary.name();
+        this.postinglistOutputName = Consts.FILE_NAMES.productsPostinglist.name();
+        this.initProps(totalNumOfProducts);
+        this.buildDictionary(sortedProductsFilePath, mapping);
+    }
 
     public ProductsDictionary(ArrayList<Review> parsedReviews, String outputPath){
         super();
@@ -60,16 +71,75 @@ public class ProductsDictionary extends Dictionary{
                 this.dictValues = this.dictValues.concat(productID);
             }
             else {
-                byte prefixLength = getCommonPrefixLength(lastAddedID, productID);
+                int prefixLength = getCommonPrefixLength(lastAddedID, productID);
                 this.prefix[productIDIndex] = prefixLength;
                 this.dictValues = this.dictValues.concat(productID.substring(prefixLength));
             }
             ArrayList<Integer> postingListRaw = allIDs.get(productID).get(allIDs.get(productID).firstKey());
             this.freq[productIDIndex] = allIDs.get(productID).firstKey();
             this.length[productIDIndex] = (byte)(productID.length());
-            this.generatePostinglist(postingListRaw, productIDIndex, this.postinglistOutputName, false);
+            this.generatePostingList(postingListRaw, productIDIndex, this.postinglistOutputName);
             productIDIndex++;
             lastAddedID = productID;
+        }
+    }
+
+    @Override
+    protected void buildDictionary(String sortedFile, ArrayList<String> valueIDPair) {
+        StringBuilder stringBuilder = new StringBuilder();
+        long startTime = System.nanoTime();
+        int productIndex = -1;
+        try (BufferedReader sortedReader = new BufferedReader(new FileReader(sortedFile), (int)Math.pow(2, 20))){
+            String line;
+            TreeMap<Integer, Integer> data = new TreeMap<>();
+            String prevProduct = "";
+            ArrayList<Integer> reviews;
+            ArrayList<Integer> frequencies = new ArrayList<>();
+            while((line = sortedReader.readLine()) != null){
+                if(!line.isEmpty()){
+                    SortDataEntry dataEntry = new SortDataEntry(line);
+                    String currentProduct = valueIDPair.get(dataEntry.getValueID());
+                    int reviewID = dataEntry.getReviewID();
+                    int frequency = dataEntry.getFrequency();
+                    Utils.printProgress(productIndex + 2, this.numOfValues, "Building Products Dictionary", startTime);
+                    if(!currentProduct.equals(prevProduct)){
+                        if (productIndex > -1){
+                            reviews = new ArrayList<>(data.keySet());
+                            frequencies = new ArrayList<>(data.values());
+                            this.generatePostingList(reviews, productIndex, this.postinglistOutputName);
+                            this.freq[productIndex] = frequencies.stream().mapToInt(Integer::intValue).sum();
+                            data = new TreeMap<>();
+                        }
+                        productIndex++;
+                        if( productIndex % Consts.K == 0){
+                            this.valuesPtr[(productIndex / Consts.K)] = stringBuilder.length();
+                            this.prefix[productIndex] = 0;
+                            stringBuilder.append(currentProduct);
+                        }
+                        else{
+                            int prefixLength = getCommonPrefixLength(prevProduct, currentProduct);
+                            this.prefix[productIndex] = prefixLength;
+                            stringBuilder.append(currentProduct.substring(prefixLength));
+                        }
+                        this.length[productIndex] = (byte)(currentProduct.length());
+                        prevProduct = currentProduct;
+                    }
+                    data.put(reviewID, frequency);
+                }
+            }
+            if(data.size() > 0){
+                if (productIndex > -1){
+                    reviews = new ArrayList<>(data.keySet());
+                    frequencies = new ArrayList<>(data.values());
+                    this.generatePostingList(reviews, productIndex, this.postinglistOutputName);
+                    this.freq[productIndex] = frequencies.stream().mapToInt(Integer::intValue).sum();
+                    data = new TreeMap<>();
+                }
+            }
+            this.dictValues = stringBuilder.toString();
+
+        } catch (IOException e){
+            System.err.println(e.getMessage());
         }
     }
 }

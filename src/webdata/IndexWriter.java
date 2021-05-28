@@ -10,10 +10,10 @@ public class IndexWriter {
      * dir is the directory in which all index files will be created
      * if the directory does not exist, it should be created
      */
-    public void write(String inputFile, String dir) {
+    public void write(String inputFile, String dir, int datasetSize) {
         this.makeOutputDir(dir);
         Parser parser = new Parser();
-        parser.parseFile(inputFile);
+        parser.parseFile(inputFile, datasetSize);
 
         ReviewsMetaData reviewsMetaData = new ReviewsMetaData(parser);
         reviewsMetaData.writeDataToDisk(dir + File.separator + Consts.SUB_DIRS.metaData);
@@ -22,8 +22,16 @@ public class IndexWriter {
 
         this.makeTempFolder("./files/tmp");
         SortManager sorter = new SortManager(new ArrayList<>(parser.getTokenSet()), new ArrayList<>(parser.getProductIdSet()), "./files/tmp");
-        sorter.sort(inputFile);
-        System.out.println("DONE SORTING");
+        String tokensSortResult = dir + File.separator + "sortedTokens";
+        String productsSortResult = dir + File.separator + "sortedProducts";
+        sorter.sort(inputFile, tokensSortResult, productsSortResult, datasetSize);
+        removeIndex("./files/tmp");
+        TokensDictionary tokensDictionary = new TokensDictionary(parser.getTotalNumOfTokens(), tokensSortResult, dir, sorter.getRawTokens());
+        tokensDictionary.writeDictionaryToDisk();
+        tokensDictionary = null;
+        ProductsDictionary productsDictionary = new ProductsDictionary(parser.getNumOfproducts(), productsSortResult, dir, sorter.getRawProductIDs());
+        productsDictionary.writeDictionaryToDisk();
+        productsDictionary = null;
     }
     /**
      * Delete all index files by removing the given directory

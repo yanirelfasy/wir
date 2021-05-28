@@ -70,8 +70,9 @@ public class Parser {
 
 
 
-    public void parseFile(String inputFile) {
+    public void parseFile(String inputFile, int datasetSize) {
         try (BufferedReader reader = new BufferedReader(new FileReader(new File(inputFile)), (int)Math.pow(2, 20))){
+            long startTime = System.nanoTime();
             String line = reader.readLine();
             String textBuffer = "";
             boolean isReadingText = false;
@@ -89,7 +90,7 @@ public class Parser {
                     if (!textBuffer.isEmpty()) {
                         extractTokens(textBuffer.toLowerCase());
                     }
-//                    Utils.printProgress(numOfReviews, 7850071, "Parsing Reviews");
+                    Utils.printProgress(numOfReviews, datasetSize, "Parsing Reviews", startTime);
                     numOfReviews++;
                     productIds.append(value);
                     productIdSet.add(value);

@@ -7,7 +7,7 @@ import java.util.Arrays;
 
 public class GroupVarint {
 
-    public static ArrayList<Byte> compress(ArrayList<Integer> values, boolean encodeAsGaps, boolean withFreq){
+    public static ArrayList<Byte> compress(ArrayList<Integer> values, boolean encodeAsGaps){
         byte sizesByte = 0;
         ArrayList<Byte> compressed = new ArrayList<>();
         ArrayList<Byte> container = new ArrayList<>();
@@ -16,12 +16,7 @@ public class GroupVarint {
         int groupsCounter = 1;
         for(int value : values){
             ArrayList<Byte> gap;
-            if(withFreq){
-                gap = convertIntToBytes(index % 2 == 0 ? value - prevValue : value);
-            }
-            else{
-                gap = convertIntToBytes(value - prevValue);
-            }
+            gap = convertIntToBytes(value - prevValue);
             int gapSize = gap.size();
             sizesByte = (byte)((sizesByte << 2) + (gapSize - 1));
             container.addAll(gap);
@@ -32,14 +27,7 @@ public class GroupVarint {
                 groupsCounter = 0;
                 container.clear();
             }
-            if(withFreq){
-                if(index % 2 == 0){
-                    prevValue = encodeAsGaps ? value : 0;
-                }
-            }
-            else{
-                prevValue = encodeAsGaps ? value : 0;
-            }
+            prevValue = encodeAsGaps ? value : 0;
             groupsCounter++;
             index++;
         }
@@ -53,7 +41,7 @@ public class GroupVarint {
         return compressed;
     }
 
-    public static ArrayList<Byte> compress(int[] values, boolean encodeAsGaps, boolean withFreq) {
+    public static ArrayList<Byte> compress(int[] values, boolean encodeAsGaps) {
         byte sizesByte = 0;
         ArrayList<Byte> compressed = new ArrayList<>();
         ArrayList<Byte> container = new ArrayList<>();
@@ -62,12 +50,7 @@ public class GroupVarint {
         int groupsCounter = 1;
         for(int value : values){
             ArrayList<Byte> gap;
-            if(withFreq){
-                gap = convertIntToBytes(index % 2 == 0 ? value - prevValue : value);
-            }
-            else{
-                gap = convertIntToBytes(value - prevValue);
-            }
+            gap = convertIntToBytes(value - prevValue);
             int gapSize = gap.size();
             sizesByte = (byte)((sizesByte << 2) + (gapSize - 1));
             container.addAll(gap);
@@ -78,14 +61,7 @@ public class GroupVarint {
                 groupsCounter = 0;
                 container.clear();
             }
-            if(withFreq){
-                if(index % 2 == 0){
-                    prevValue = encodeAsGaps ? value : 0;
-                }
-            }
-            else{
-                prevValue = encodeAsGaps ? value : 0;
-            }
+            prevValue = encodeAsGaps ? value : 0;
             groupsCounter++;
             index++;
         }
