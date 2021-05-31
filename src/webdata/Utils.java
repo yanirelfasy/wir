@@ -1,8 +1,6 @@
 package webdata;
 
-import java.io.BufferedOutputStream;
-import java.io.IOException;
-import java.io.RandomAccessFile;
+import java.io.*;
 import java.nio.ByteBuffer;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -45,25 +43,17 @@ public class Utils {
         }
     }
 
-    public static ArrayList<Integer> splitAtOdd(ArrayList<Integer> toSplit){
-        ArrayList<Integer> result = new ArrayList<>();
-        for(int i = 0; i < toSplit.size(); i++){
-            if(i % 2 != 0){
-                result.add(toSplit.get(i));
-            }
+    public static long writeStringToFile(String data, String output){
+        try (BufferedWriter writer = new BufferedWriter(new FileWriter(new File(output)))){
+                writer.write(data);
+                return 0;
+        } catch (IOException e) {
+            System.err.println(e.getMessage());
+            return 0;
         }
-        return result;
     }
 
-    public static ArrayList<Integer> splitAtEven(ArrayList<Integer> toSplit){
-        ArrayList<Integer> result = new ArrayList<>();
-        for(int i = 0; i < toSplit.size(); i++){
-            if(i % 2 == 0){
-                result.add(toSplit.get(i));
-            }
-        }
-        return result;
-    }
+
 
     public static ArrayList<Byte> convertToBytesList(byte[] arr){
         ArrayList<Byte> result = new ArrayList<>();
@@ -101,7 +91,7 @@ public class Utils {
         try{
             Path inputFilePath = Paths.get(path);
             byte[] resultAsBytes = Files.readAllBytes(inputFilePath);
-            ArrayList<Integer> result = GroupVarint.decodeSequence(resultAsBytes, asGaps, false);
+            ArrayList<Integer> result = GroupVarint.decodeSequence(resultAsBytes, asGaps);
             return Utils.convertToIntArray(result);
         }
         catch(Exception e){
@@ -191,5 +181,14 @@ public class Utils {
         long elapsedTime = endTime - startTime;
         long seconds = TimeUnit.SECONDS.convert(elapsedTime, TimeUnit.NANOSECONDS);
         return getTimeString(seconds);
+    }
+
+    public static ArrayList<Integer> alternateLists(ArrayList<Integer> l1, ArrayList<Integer> l2){
+        ArrayList<Integer> result = new ArrayList<>();
+        for(int i = 0; i < l1.size(); i++){
+                result.add(l1.get(i));
+                result.add(l2.get(i));
+        }
+        return result;
     }
 }

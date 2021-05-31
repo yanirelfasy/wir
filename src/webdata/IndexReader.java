@@ -1,9 +1,5 @@
 package webdata;
 
-import java.io.File;
-import java.io.FileInputStream;
-import java.io.IOException;
-import java.io.ObjectInputStream;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Enumeration;
@@ -13,14 +9,44 @@ public class IndexReader {
 	TokensDictionary tokensDictionary;
 	ProductsDictionary productsDictionary;
 	ReviewsMetaData metaData;
+	Consts.DATA_TYPES activeType;
+	String dataDir;
 
+	private void setActiveDictionary(Consts.DATA_TYPES dataType){
+		switch(dataType){
+			case tokens:
+				if(activeType != Consts.DATA_TYPES.tokens){
+					this.tokensDictionary = new TokensDictionary(this.dataDir);
+					productsDictionary = null;
+					metaData = null;
+					activeType = Consts.DATA_TYPES.tokens;
+				}
+				break;
+			case products:
+				if(activeType != Consts.DATA_TYPES.products){
+					this.productsDictionary = new ProductsDictionary(this.dataDir);
+					tokensDictionary = null;
+					metaData = null;
+					activeType = Consts.DATA_TYPES.products;
+				}
+				break;
+			case metaData:
+				if(activeType != Consts.DATA_TYPES.metaData){
+					this.metaData = new ReviewsMetaData(this.dataDir);
+					tokensDictionary = null;
+					productsDictionary = null;
+					activeType = Consts.DATA_TYPES.metaData;
+				}
+				break;
+		}
+	}
 	/**
 	* Creates an IndexReader which will read from the given directory
 	*/
 	public IndexReader(String dir) {
 		this.tokensDictionary = new TokensDictionary(dir);
-		this.productsDictionary = new ProductsDictionary(dir);
-		this.metaData = new ReviewsMetaData(dir);
+		this.activeType = Consts.DATA_TYPES.tokens;
+		this.dataDir = dir;
 	}
 	
 	/**
@@ -28,6 +54,7 @@ public class IndexReader {
 	* Returns null if there is no review with the given identifier
 	*/
 	public String getProductId(int reviewId) {
+		this.setActiveDictionary(Consts.DATA_TYPES.metaData);
 		if((reviewId >= 1) && reviewId <= metaData.getNumOfReviews()){
 			return metaData.getProductIDByReviewID(reviewId);
 		}
@@ -39,6 +66,7 @@ public class IndexReader {
 	* Returns -1 if there is no review with the given identifier
 	*/
 	public int getReviewScore(int reviewId) {
+		this.setActiveDictionary(Consts.DATA_TYPES.metaData);
 		if((reviewId >= 1) && reviewId <= metaData.getNumOfReviews()){
 			return metaData.getScore(reviewId);
 		}
@@ -50,6 +78,7 @@ public class IndexReader {
 	* Returns -1 if there is no review with the given identifier
 	*/
 	public int getReviewHelpfulnessNumerator(int reviewId) {
+		this.setActiveDictionary(Consts.DATA_TYPES.metaData);
 		if((reviewId >= 1) && reviewId <= metaData.getNumOfReviews()){
 			return metaData.getFirstHelpfulness(reviewId);
 		}
@@ -61,6 +90,7 @@ public class IndexReader {
 	* Returns -1 if there is no review with the given identifier
 	*/
 	public int getReviewHelpfulnessDenominator(int reviewId) {
+		this.setActiveDictionary(Consts.DATA_TYPES.metaData);
 		if((reviewId >= 1) && reviewId <= metaData.getNumOfReviews()){
 			return metaData.getSecondHelpfulness(reviewId);
 		}
@@ -72,6 +102,7 @@ public class IndexReader {
 	* Returns -1 if there is no review with the given identifier
 	*/
 	public int getReviewLength(int reviewId) {
+		this.setActiveDictionary(Consts.DATA_TYPES.metaData);
 		if((reviewId >= 1) && reviewId <= metaData.getNumOfReviews()){
 			return metaData.getNumOfTokens(reviewId);
 		}
@@ -83,7 +114,12 @@ public class IndexReader {
 	* Returns 0 if there are no reviews containing this token
 	*/
 	public int getTokenFrequency(String token) {
+		this.setActiveDictionary(Consts.DATA_TYPES.tokens);
+		token = token.toLowerCase();
 		int tokenIndex = this.tokensDictionary.search(token);
+		if(tokenIndex == -1){
+			return 0;
+		}
 		long postinglistPtr = this.tokensDictionary.getPostingListPointer(tokenIndex);
 		long nextPostinglistPtr = this.tokensDictionary.getPostingListPointer(tokenIndex + 1);
 		return this.tokensDictionary.getPostinglistLength(postinglistPtr, nextPostinglistPtr);
@@ -95,6 +131,7 @@ public class IndexReader {
 	* Returns 0 if there are no reviews containing this token
 	*/
 	public int getTokenCollectionFrequency(String token) {
+		this.setActiveDictionary(Consts.DATA_TYPES.tokens);
 		int tokenPosition = this.tokensDictionary.search(token.toLowerCase());
 		if (tokenPosition >= 0){
 			return this.tokensDictionary.getFrequency(tokenPosition);
@@ -112,20 +149,27 @@ public class IndexReader {
 	* Returns an empty Enumeration if there are no reviews containing this token
 	* */
 	public Enumeration<Integer> getReviewsWithToken(String token) {
+		this.setActiveDictionary(Consts.DATA_TYPES.tokens);
 		ArrayList<Integer> postingList = new ArrayList<>();
+		ArrayList<Integer> freqList = new ArrayList<>();
+		token = token.toLowerCase();
 		int tokenIndex = this.tokensDictionary.search(token);
 		if(tokenIndex >= 0){
 			long postinglistPtr = this.tokensDictionary.getPostingListPointer(tokenIndex);
 			long nextPostinglistPtr = this.tokensDictionary.getPostingListPointer(tokenIndex + 1);
-			postingList = this.tokensDictionary.getDecodedPostinglist(postinglistPtr, nextPostinglistPtr, true, true);
+			long freqListPtr = this.tokensDictionary.getFreqListPointer(tokenIndex);
+			long nextFreqListPtr = this.tokensDictionary.getFreqListPointer(tokenIndex + 1);
+			postingList = this.tokensDictionary.getDecodedPostinglist(postinglistPtr, nextPostinglistPtr, true);
+			freqList = this.tokensDictionary.getDecodedFreqList(freqListPtr, nextFreqListPtr);
 		}
-		return Collections.enumeration(postingList);
+		return Collections.enumeration(Utils.alternateLists(postingList, freqList));
 	}
 
 	/**
 	* Return the number of product reviews available in the system
 	*/
 	public int getNumberOfReviews() {
+		this.setActiveDictionary(Consts.DATA_TYPES.metaData);
 		return this.metaData.getNumOfReviews();
 	}
 
@@ -134,6 +178,7 @@ public class IndexReader {
 	* (Tokens should be counted as many times as they appear)
 	*/
 	public int getTokenSizeOfReviews() {
+		this.setActiveDictionary(Consts.DATA_TYPES.metaData);
 		return this.metaData.totalNumOfTokens();
 	}
 
@@ -144,14 +189,18 @@ public class IndexReader {
 	* Returns an empty Enumeration if there are no reviews for this product
 	*/
 	public Enumeration<Integer> getProductReviews(String productId) {
+		this.setActiveDictionary(Consts.DATA_TYPES.products);
 		ArrayList<Integer> result = new ArrayList<>();
 		int productIDIndex = this.productsDictionary.search(productId);
 		if(productIDIndex >= 0){
 			long postinglistPtr = this.productsDictionary.getPostingListPointer(productIDIndex);
 			long nextPostinglistPtr = this.productsDictionary.getPostingListPointer(productIDIndex + 1);
-			result = this.productsDictionary.getDecodedPostinglist(postinglistPtr, nextPostinglistPtr, true, false);
+			result = this.productsDictionary.getDecodedPostinglist(postinglistPtr, nextPostinglistPtr, true);
 		}
 		return Collections.enumeration(result);
 	}
 
+	public String getToken(int index){
+		return this.tokensDictionary.getTokenFromIndex(index);
+	}
 }

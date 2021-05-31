@@ -23,6 +23,8 @@ public abstract class Dictionary implements Serializable {
     protected String frequenciesListOutputName;
     protected long postingListFilePointer;
     protected long freqListFilePointer;
+    protected BufferedOutputStream postingListWriter;
+    protected BufferedOutputStream freqListWriter;
 
 
     protected void initProps(TreeMap<String, TreeMap<Integer, ArrayList<Integer>>> allValues){
@@ -48,6 +50,12 @@ public abstract class Dictionary implements Serializable {
         this.length = new byte[numOfValues];
         this.prefix = new int[numOfValues];
         this.dictValues = "";
+        try {
+            this.postingListWriter = new BufferedOutputStream(new FileOutputStream(this.outputPath + File.separator + postinglistOutputName));
+            this.freqListWriter = new BufferedOutputStream(new FileOutputStream(this.outputPath + File.separator + frequenciesListOutputName));
+        } catch (FileNotFoundException e) {
+            e.printStackTrace();
+        }
     }
 
     protected int getCommonPrefixLength(String s1, String s2){
@@ -62,19 +70,19 @@ public abstract class Dictionary implements Serializable {
 
     protected void generatePostingList(ArrayList<Integer> postingListRawData, int position, String postingListName){
         ArrayList<Byte> encodedData = GroupVarint.compress(postingListRawData, true);
-        try (BufferedOutputStream writer = new BufferedOutputStream(new FileOutputStream(new File(this.outputPath + File.separator + postingListName)))) {
-            this.postingListPtr[position] = this.writeDataToFile(encodedData, writer, false);
+        try {
+            this.postingListPtr[position] = this.writeDataToFile(encodedData, this.postingListWriter, false);
         } catch (IOException e) {
-            System.err.println(e.getMessage());
+            e.printStackTrace();
         }
     }
 
     protected void generateFreqList(ArrayList<Integer> freqListRawData, int position, String freqListName){
         ArrayList<Byte> encodedData = GroupVarint.compress(freqListRawData, false);
-        try (BufferedOutputStream writer = new BufferedOutputStream(new FileOutputStream(new File(this.outputPath + File.separator + freqListName)))) {
-            this.freqListPtr[position] = this.writeDataToFile(encodedData, writer, true);
+        try {
+            this.freqListPtr[position] = this.writeDataToFile(encodedData, this.freqListWriter, true);
         } catch (IOException e) {
-            System.err.println(e.getMessage());
+            e.printStackTrace();
         }
     }
 
@@ -104,6 +112,22 @@ public abstract class Dictionary implements Serializable {
             return binSearch(middle + 1, rightBound, value);
         }
         return -1;
+    }
+
+    public String getTokenFromIndex(int index){
+        index = index - 1;
+        int leftBound = (index - (index % Consts.K)) / Consts.K;
+        int startingPointer = this.valuesPtr[leftBound];
+        String prevValue = "";
+        String valueToCheck = "";
+        for(int i = index - (index % Consts.K); i <= index; i++){
+            valueToCheck = this.dictValues.substring(startingPointer, startingPointer + length[i] - this.prefix[i]);
+            String currentPrefix = prevValue.substring(0, this.prefix[i]);
+            valueToCheck = currentPrefix.concat(valueToCheck);
+            startingPointer = startingPointer +  this.length[i] - this.prefix[i];
+            prevValue = valueToCheck;
+        }
+        return valueToCheck;
     }
 
     private int searchInRange(int leftBound, String value){
@@ -138,12 +162,19 @@ public abstract class Dictionary implements Serializable {
         return this.postingListPtr[tokenIndex];
     }
 
+    public long getFreqListPointer(int tokenIndex){
+        if(tokenIndex >= this.freqListPtr.length){
+            return -1;
+        }
+        return this.freqListPtr[tokenIndex];
+    }
+
 
     public int getPostinglistLength(long postinglistPointer, long nextListPointer){
         int result = 0;
         try{
-            ArrayList<Integer> allPostingData = this.getDecodedPostinglist(postinglistPointer, nextListPointer, false, true);
-            result = Utils.splitAtEven(allPostingData).size();
+            ArrayList<Integer> allPostingData = this.getDecodedPostinglist(postinglistPointer, nextListPointer, false);
+            result = allPostingData.size();
         }
         catch (Exception e) {
             System.err.println(e.getMessage());
@@ -151,14 +182,30 @@ public abstract class Dictionary implements Serializable {
         return result;
     }
 
-    public ArrayList<Integer> getDecodedPostinglist(long postinglistPointer, long nextListPointer, boolean decodeGaps, boolean hasFreq){
+    public ArrayList<Integer> getDecodedPostinglist(long postinglistPointer, long nextListPointer, boolean decodeGaps){
         ArrayList<Integer> sequence = new ArrayList<>();
         try (RandomAccessFile postingList = new RandomAccessFile(this.outputPath + File.separator + this.postinglistOutputName, "rw")) {
             nextListPointer = (nextListPointer == -1) ? postingList.length(): nextListPointer;
             postingList.seek(postinglistPointer);
             byte [] allBytes = new byte[(int) (nextListPointer - postinglistPointer)];
             postingList.read(allBytes);
-            sequence = GroupVarint.decodeSequence(allBytes, decodeGaps, hasFreq);
+            sequence = GroupVarint.decodeSequence(allBytes, decodeGaps);
+            return sequence;
+        }
+        catch (IOException e) {
+            System.err.println(e.getMessage());
+        }
+        return sequence;
+    }
+
+    public ArrayList<Integer> getDecodedFreqList(long freqListPointer, long nextListPointer){
+        ArrayList<Integer> sequence = new ArrayList<>();
+        try (RandomAccessFile postingList = new RandomAccessFile(this.outputPath + File.separator + this.frequenciesListOutputName, "rw")) {
+            nextListPointer = (nextListPointer == -1) ? postingList.length(): nextListPointer;
+            postingList.seek(freqListPointer);
+            byte [] allBytes = new byte[(int) (nextListPointer - freqListPointer)];
+            postingList.read(allBytes);
+            sequence = GroupVarint.decodeSequence(allBytes, false);
             return sequence;
         }
         catch (IOException e) {
@@ -174,6 +221,7 @@ public abstract class Dictionary implements Serializable {
         }
         byte[] arrayToWrite = Utils.convertToByteArray(encodedData);
         writer.write(arrayToWrite);
+        writer.flush();
         if (isFreqList){
             this.freqListFilePointer += arrayToWrite.length;
         }
@@ -192,36 +240,26 @@ public abstract class Dictionary implements Serializable {
     public void writeDictionaryToDisk(){
         String writingPath = this.outputPath + File.separator;
         long startTime = System.nanoTime();
-        Utils.printProgress(1, 15, "Write Dictionary - compress freq", startTime);
         ArrayList<Byte> encodedData = GroupVarint.compress(this.freq, false);
-        Utils.printProgress(2, 15, "Write Dictionary - write freq", startTime);
         Utils.writeToFile(encodedData, writingPath + Consts.FILE_NAMES.Freq);
-        Utils.printProgress(3, 15, "Write Dictionary - compress valuesPtr", startTime);
         encodedData = GroupVarint.compress(this.valuesPtr, true);
-        Utils.printProgress(4, 15, "Write Dictionary - write valuesPtr", startTime);
         Utils.writeToFile(encodedData, writingPath + Consts.FILE_NAMES.ValuePtr);
-        Utils.printProgress(5, 15, "Write Dictionary - compress postingListPtr", startTime);
         encodedData = GroupVarint.compress(this.postingListPtr, true);
-        Utils.printProgress(6, 15, "Write Dictionary - write postingListPtr", startTime);
         Utils.writeToFile(encodedData, writingPath + Consts.FILE_NAMES.PostinglistPtr);
-        Utils.printProgress(7, 15, "Write Dictionary - compress dictValues", startTime);
-        encodedData = Utils.convertToBytesList(this.dictValues.getBytes());
-        Utils.printProgress(8, 15, "Write Dictionary - write dictValues", startTime);
-        Utils.writeToFile(encodedData, writingPath + Consts.FILE_NAMES.ConcatString);
-        Utils.printProgress(9, 15, "Write Dictionary - compress prefix", startTime);
+        Utils.writeStringToFile( this.dictValues, writingPath + Consts.FILE_NAMES.ConcatString);
         encodedData = GroupVarint.compress(this.prefix, false);
-        Utils.printProgress(10, 15, "Write Dictionary - write prefix", startTime);
         Utils.writeToFile(encodedData, writingPath + Consts.FILE_NAMES.Prefix);
-        Utils.printProgress(11, 15, "Write Dictionary - compress freqListPtr", startTime);
         encodedData = GroupVarint.compress(this.freqListPtr, true);
-        Utils.printProgress(12, 15, "Write Dictionary - write freqListPtr", startTime);
         Utils.writeToFile(encodedData, writingPath + Consts.FILE_NAMES.freqListPtr);
         encodedData = null;
-        Utils.printProgress(13, 15, "Write Dictionary - write length", startTime);
         Utils.writeToFile(this.length, writingPath + Consts.FILE_NAMES.Length);
-        Utils.printProgress(14, 15, "Write Dictionary - write numOfValues", startTime);
         Utils.writeToFile(GroupVarint.convertIntToBytes(this.numOfValues), writingPath + Consts.FILE_NAMES.NumOfValues);
-        Utils.printProgress(15, 15, "Write Dictionary", startTime);
+        try {
+            this.freqListWriter.close();
+            this.postingListWriter.close();
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
     }
 
 
@@ -276,6 +314,10 @@ public abstract class Dictionary implements Serializable {
 
     protected int readNumOfValuesFromDisk(){
         return Utils.readIntFromDisk(this.outputPath + File.separator + Consts.FILE_NAMES.NumOfValues);
+    }
+
+    protected long[] readFreqListPtrFromDisk(){
+        return this.readLongArrayFromDisk(this.outputPath + File.separator + Consts.FILE_NAMES.freqListPtr);
     }
 
 

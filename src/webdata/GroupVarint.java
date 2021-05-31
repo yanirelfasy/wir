@@ -143,12 +143,10 @@ public class GroupVarint {
         return decoded;
     }
 
-    public static ArrayList<Integer> decodeSequence(byte[] sequence, boolean decodeGaps, boolean hasFreq){
+    public static ArrayList<Integer> decodeSequence(byte[] sequence, boolean decodeGaps){
         int bytesRead = 0;
         int [] sizes;
         int prevValue = 0;
-        int prevFreq = 0;
-        int index = 0;
         ArrayList<Integer> result = new ArrayList<>();
         while(bytesRead < sequence.length){
             sizes = decodeSizesByte(sequence[bytesRead]);
@@ -158,22 +156,13 @@ public class GroupVarint {
                     byte [] subSequence = Arrays.copyOfRange(sequence, bytesRead, bytesRead + size);
                     subSequence = GroupVarint.makeFourByteArray(subSequence);
                     int converted = Utils.convertBytesToInt(subSequence);
-                    if(hasFreq){
-                        result.add(index % 2 == 0 ? converted + prevValue : converted + prevFreq);
-                        if(index % 2 == 0){
-                            prevValue = decodeGaps ? converted + prevValue : 0;
-                        }
-                    }
-                    else{
-                        result.add(converted + prevValue);
-                        prevValue = decodeGaps ? converted + prevValue : 0;
-                    }
+                    result.add(converted + prevValue);
+                    prevValue = decodeGaps ? converted + prevValue : 0;
                     bytesRead += size;
                 }
                 else{
                     break;
                 }
-                index++;
             }
         }
         return result;

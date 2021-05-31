@@ -96,8 +96,8 @@ public class SortManager {
         return value + DATA_SEPARATOR +reviewID + DATA_SEPARATOR + frequency;
     }
 
-    private void firstStep(String inputFile, int datasetSize){
-        try (BufferedReader reader = new BufferedReader(new FileReader(new File(inputFile)), (int)Math.pow(2, 20))){
+    private void firstStep(String inputFile){
+        try (BufferedReader reader = new BufferedReader(new FileReader(new File(inputFile)))){
             String line = reader.readLine();
             String textBuffer = "";
             boolean isReadingText = false;
@@ -106,7 +106,9 @@ public class SortManager {
             while (line != null){
 
                 if (isReadingText && (value = Utils.getFieldContent(line, "product/productId")).equals("-1")) {
-                    textBuffer = textBuffer.concat(" ").concat(line);
+                    if(!line.isEmpty()){
+                        textBuffer = textBuffer.concat(" ").concat(line);
+                    }
                     line = reader.readLine();
                     continue;
                 }
@@ -116,7 +118,6 @@ public class SortManager {
                     if (!textBuffer.isEmpty()) {
                         extractTokens(textBuffer.toLowerCase());
                     }
-                    Utils.printProgress(numOfReviews, datasetSize, "Sort - First Step", startTime);
                     numOfReviews++;
                     if (numOfReviews % (Consts.REVIEWS_PER_FILE + 1)  == 0) {
                         writeTmpFile();
@@ -167,7 +168,6 @@ public class SortManager {
                 int start = 0;
                 int end = start + Consts.M;
                 for (int outputFileIndex = 0; outputFileIndex < numOfFiles; outputFileIndex++){
-                    Utils.printProgress(outputFileIndex, this.numOfTempFiles, "Sort Second Step:", startTime);
                     if ((step == numOfMerges) && (outputFileIndex == (numOfFiles - 1))) {
                         fileToInspect = resultPath;
                     } else {
@@ -246,8 +246,8 @@ public class SortManager {
         this.productIDPairs = new HashMap<>();
     }
 
-    public void sort(String input, String tokensOutput, String productsOutput, int datasetSize){
-        firstStep(input, datasetSize);
+    public void sort(String input, String tokensOutput, String productsOutput){
+        firstStep(input);
         this.clear();
         this.secondStep(tokensOutput, this.tmpPath, Consts.TEMP_TOKEN_PAIRS);
         this.secondStep(productsOutput, this.tmpPath, Consts.TEMP_PRODUCT_IDS_PAIRS);

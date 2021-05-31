@@ -12,6 +12,7 @@ public class TokensDictionary extends Dictionary{
         this.outputPath = outputPath + File.separator + Consts.SUB_DIRS.tokensDictionary.name();
         this.postinglistOutputName = Consts.FILE_NAMES.tokensPostinglist.name();
         this.frequenciesListOutputName = Consts.FILE_NAMES.freqList.name();
+
         this.initProps(totalNumOfTerms);
         this.buildDictionary(sortedTermsFilePath, mapping);
     }
@@ -32,6 +33,7 @@ public class TokensDictionary extends Dictionary{
         this.freq = this.readFreqFromDisk();
         this.valuesPtr = this.readValuesPtrFromDisk(true);
         this.postingListPtr = this.readPostinglistPtrFromDisk();
+        this.freqListPtr = this.readFreqListPtrFromDisk();
         this.dictValues = this.readConcatStringFromDisk();
         this.prefix = this.readPrefixFromDisk();
         this.length = this.readLengthFromDisk();
@@ -111,7 +113,6 @@ public class TokensDictionary extends Dictionary{
                     String currentTerm = valueIDPair.get(dataEntry.getValueID());
                     int reviewID = dataEntry.getReviewID();
                     int frequency = dataEntry.getFrequency();
-                    Utils.printProgress(tokenIndex + 2, this.numOfValues, "Building Token Dictionary", startTime);
                     if(!currentTerm.equals(prevTerm)){
                         if (tokenIndex > -1){
                             reviews = new ArrayList<>(data.keySet());
@@ -130,16 +131,7 @@ public class TokensDictionary extends Dictionary{
                         else{
                             int prefixLength = getCommonPrefixLength(prevTerm, currentTerm);
                             this.prefix[tokenIndex] = prefixLength;
-                            try{
-                                stringBuilder.append(currentTerm.substring(prefixLength));
-                            }
-                            catch (Exception e){
-                                System.out.println("FAILED WITH:");
-                                System.out.println("STRING 1: " + prevTerm + " String 2: " + currentTerm);
-                                System.out.println("Common Prefix Length: " + prefixLength);
-                                System.err.println(e.getMessage());
-                            }
-
+                            stringBuilder.append(currentTerm.substring(prefixLength));
                         }
                         this.length[tokenIndex] = (byte)(currentTerm.length());
                         prevTerm = currentTerm;

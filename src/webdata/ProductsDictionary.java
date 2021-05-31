@@ -1,9 +1,6 @@
 package webdata;
 
-import java.io.BufferedReader;
-import java.io.File;
-import java.io.FileReader;
-import java.io.IOException;
+import java.io.*;
 import java.util.ArrayList;
 import java.util.TreeMap;
 
@@ -13,6 +10,7 @@ public class ProductsDictionary extends Dictionary{
         super();
         this.outputPath = outputPath + File.separator + Consts.SUB_DIRS.productsDictionary.name();
         this.postinglistOutputName = Consts.FILE_NAMES.productsPostinglist.name();
+        this.frequenciesListOutputName = Consts.FILE_NAMES.freqList.name();
         this.initProps(totalNumOfProducts);
         this.buildDictionary(sortedProductsFilePath, mapping);
     }
@@ -101,7 +99,6 @@ public class ProductsDictionary extends Dictionary{
                     String currentProduct = valueIDPair.get(dataEntry.getValueID());
                     int reviewID = dataEntry.getReviewID();
                     int frequency = dataEntry.getFrequency();
-                    Utils.printProgress(productIndex + 2, this.numOfValues, "Building Products Dictionary", startTime);
                     if(!currentProduct.equals(prevProduct)){
                         if (productIndex > -1){
                             reviews = new ArrayList<>(data.keySet());
