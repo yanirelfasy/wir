@@ -6,6 +6,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.Date;
 import java.util.concurrent.TimeUnit;
 import java.util.regex.Matcher;
@@ -191,4 +192,25 @@ public class Utils {
         }
         return result;
     }
+
+    public static double[] intCollectionToDoubleArr(Collection<Integer> values) {
+        double[] result = new double[values.size()];
+        int i = 0;
+        for (Integer val: values) {
+            result[i] = (double) val;
+            ++i;
+        }
+        return result;
+    }
+
+    public static double[] doubleCollectionToDoubleArr(Collection<Double> values) {
+        double[] result = new double[values.size()];
+        int i = 0;
+        for (double val: values) {
+            result[i] = val;
+            ++i;
+        }
+        return result;
+    }
+
 }
