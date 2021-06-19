@@ -22,5 +22,5 @@ public class Consts {
     public static final String DATA_SEPARATOR = ",";
     public enum SORTED_FILES_NAMES {sortedTokens, sortedProducts}
 
-    public static final int NUM_OF_REVIEWS_TO_FIND = 30;
+    public static final int NUM_OF_REVIEWS_TO_FIND = 50;
 }
