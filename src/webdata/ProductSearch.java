@@ -14,23 +14,6 @@ public class ProductSearch extends SearchMethod{
     }
 
     /**
-     * Returns a list of the id-s of the k most highly ranked productIds for the
-     * given query using a function of your choice
-     * The list should be sorted by the ranking
-     *
-     * Algorithm:
-     * 4.	For each productId get the posting list and find ALL the reviews that it appears in.
-     * 5.	For each review of each productId, get the helpfulness and score.
-     *      If helpfulness is not in range [0,1] then discard it.
-     *      Then save (helpfulness*score) as the ‘new_review_score’.
-     * 6.	Calculate the average of: average(‘all_new_review_scores_of_pid’)
-     *      and median(‘all_new_review_scores_of_pid’) for each product.
-     * 7.	Normalize the above result for each product by the sum of all results.
-     * 8.	Combine the weights calculated in steps 3 and 7 and normalize.
-     * 9.	Return top k.
-     */
-
-    /**
      * Gives a weight to each review according to it's place inside the results array.
      * @param numOfReviews The number of reviews in the results array.
      * @return weights An array of double that contains the weights of each review. All the weights sum to 1.
@@ -64,6 +47,11 @@ public class ProductSearch extends SearchMethod{
         return productIDsWithWeight;
     }
 
+    /**
+     * Calculates the score of the products according to the reviews in the positinglist and the weights.
+     * @param productIDsWeights The weights of the products
+     * @return a map of productID and it's score.
+     */
     private HashMap<String, Double> getProductsScore(HashMap<String, Double> productIDsWeights){
         HashMap<String, Double> productsScore = new HashMap<>();
         for (String productId: productIDsWeights.keySet()) {
